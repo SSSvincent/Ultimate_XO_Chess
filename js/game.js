@@ -148,8 +148,9 @@
 
   /* 规则页专用：演练收尾 —— 棋盘收回只读演示。
      不再高亮任何区域（绿框）、不再标出结束手（红格）、不亮皇冠、不泛光，状态栏回到演示文案。
-     触发点：① 收尾讲解说完时由 dialogue.js 调用（见 window.rulesEndDemo）；
-             ② 万一她的脚本落子让玩家无处可落（理论上不会走到，因为收尾后她已不再落子）。 */
+     触发点：她的脚本落子让玩家无处可落时（见 applyMove 的 demo 分支、rulesLoopMove 的满区分支）。
+     注：E 区被玩家下满后她并不落子（只是「纯口头假设」），棋盘会保持「轮到 ✕」的观感；
+        直到玩家在收尾选项里选「结束教程」，那时才由 rulesFinalMove 真正落下这一手并正常判胜负。 */
   function endDemo() {
     demoFinished = true;
     rulesMode = 'off';
@@ -158,7 +159,6 @@
     render();
     statusEl.textContent = DEMO_STATUS;
   }
-  window.rulesEndDemo = endDemo;
 
   /* 规则页专用：演练循环里交小薇的脚本落子（落完把棋盘交回玩家）。
      正常情况她总能落在对应区域的 e 号格；万一那格已被占，退而取该区域第一个空位。 */
@@ -180,6 +180,23 @@
     if (info.stuck) return true;          // E 区被下满 → 已在 applyMove 里安静收尾
     readOnly = false;                     // 她落完 → 把棋盘交回玩家
     return true;
+  };
+
+  /* 规则页专用：教程收尾时交小薇的最后一步（真实落子，参与正常胜负判定）。
+     与 rulesLoopMove 不同：她落完这一手后不由玩家接手 —— 玩家正好无处可落，
+     applyMove 会走正常的「游戏结束」分支：判定胜负、亮皇冠、状态栏给出获胜者与比分。
+     调用点：玩家在收尾选项里选「结束教程」时（dialogue.js 的 endTutorial）。
+     返回 { winner, scoreX, scoreO }；落子不合法（已结束 / 已有子 / 区域不符）时返回 false。 */
+  window.rulesFinalMove = function (r, c) {
+    if (!grid || gameOver) return false;
+    if (r == null || c == null || !grid[r] || grid[r][c]) return false;
+    const bi = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+    if (nextBlock !== null && nextBlock !== bi) return false;   // 只能落在被指定的区域
+    demoFinished = false;   // 撤销「收尾演示」标记，让这一手按正常规则结算（绿框/红格随之失效）
+    rulesMode = 'off';
+    readOnly = true;        // 落完这一盘就结束了，玩家不再落子
+    applyMove(r, c);        // 不带 demo 标记 → 正常判定胜负、亮皇冠
+    return { winner: winner, scoreX: scoreX, scoreO: scoreO };
   };
 
   // 悔棋：回退一步
@@ -355,7 +372,8 @@
       else msg = '平局！';
       setCrown();
       setGlow();
-      statusEl.textContent = '游戏结束 —— ' + (current === 'X' ? '◯' : '✕') +
+      // 此时 current 就是「无处可落」的那一方（轮到它却落不下）
+      statusEl.textContent = '游戏结束 —— ' + (current === 'X' ? '✕' : '◯') +
         ' 无处落子，' + msg + '（✕ ' + scoreX + ' : ' + scoreO + ' ◯）';
       return { player, nextBlock };
     }
@@ -408,11 +426,12 @@
         return;
       }
       readOnly = true;
-      // E 区已被玩家下满 → 这是演练的最后一手，交小薇不再落子（后面只是「纯口头假设」）。
+      // E 区已被玩家下满 → 这是演练的最后一手，交小薇先不落子（后面只是「纯口头假设」）。
       //   棋盘保持「轮到 ✕」的观感：她的可落子区域仍是绿色呼吸框，她将落的 e 号格
       //   由 render 标成红色结束手提示（win-hint）—— 正好对应她那句
       //   「如果我在该区域的e号格落子，那么下一步你将无法落子」。
-      //   等收尾讲解说完，dialogue.js 再调 rulesEndDemo() 一并收干净。
+      //   绿框与红格一直亮到玩家选完选项；若选「结束教程」，dialogue.js 会调
+      //   window.rulesFinalMove 让她真正落下这一手，棋局随之正常判胜负、显示获胜者。
       if (typeof window.rulesAfterLoopMove === 'function') {
         window.rulesAfterLoopMove({
           cell: cellLetter, block: blockLetter, gained: gained

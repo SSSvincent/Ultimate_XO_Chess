@@ -4,7 +4,7 @@
 
 **🎮 在线体验：<https://sssvincent.github.io/Ultimate_XO_Chess/>**
 
-当前版本：**v1.0.18**
+当前版本：**v1.0.19**
 
 ---
 
@@ -80,7 +80,7 @@ Ultimate_XO_Chess/
 │   ├── game.js                棋局核心（落子 / 计分 / 胜负判定）
 │   └── dialogue.js            规则页对话驱动与棋盘演示
 └── test/
-    └── harness.test.js        回归测试（295 项断言）
+    └── harness.test.js        回归测试（319 项断言）
 ```
 
 ## 本地运行
@@ -104,7 +104,7 @@ node test/harness.test.js
 预期输出：
 
 ```
-结果: 295 通过, 0 失败
+结果: 319 通过, 0 失败
 ```
 
 ## 作者

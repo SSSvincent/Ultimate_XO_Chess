@@ -813,30 +813,64 @@ eq(choicesR[1].textContent, '完成对局', '第二个选项是「完成对局�
 eq(choicesR[1].classList._s.has('primary'), true, '「完成对局」是主选项（高亮）');
 eq(byIdR['dlgNext'].classList._s.has('show'), false, '弹出选项后不再显示「继续」提示');
 
-// 末句说完即收干净棋盘：绿框与红格一并撤掉
-eq(byIdR['status'].textContent.includes('规则介绍'), true, '收尾讲解说完后棋盘收回只读演示');
-eq(blockOf('I').classList._s.has('active'), false, '收尾后绿色呼吸框撤掉');
-eq(cellIn('I', 'e').classList._s.has('win-hint'), false, '收尾后红色结束手提示撤掉');
-eq(byIdR['crownO'].classList._s.has('show'), false, '收尾后不亮皇冠');
-eq(byIdR['scoreBoxO'].classList._s.has('turn-o'), false, '收尾后 ◯ 模块不再泛光');
+// 选项弹出时棋盘仍停在她的回合：绿框与红格都还在 —— 红格指的就是她随后的收尾一手
+eq(byIdR['status'].textContent.includes('轮到 ✕'), true, '挑选项期间状态栏仍是「轮到 ✕」');
+eq(blockOf('I').classList._s.has('active'), true, '挑选项期间 I 区绿色呼吸框还在');
+eq(cellIn('I', 'e').classList._s.has('win-hint'), true, '挑选项期间 I-e 红色结束手提示还在');
+eq(byIdR['crownO'].classList._s.has('show'), false, '此时还没判胜负，不亮皇冠');
+eq(byIdR['scoreBoxO'].classList._s.has('turn-o'), false, '此时 ◯ 模块不泛光（是她的回合）');
 eq(winR.dialogueState(), 'ready', '末句就绪（等玩家在两个选项里挑一个）');
 
-// 收尾后玩家再点棋盘也无效
+// 挑选项期间玩家点棋盘也无效（棋盘仍是只读的）
 const statusEnd = byIdR['status'].textContent;
 opsR.clickCell(3, 3);                                        // E-a（已有子）
-eq(byIdR['status'].textContent, statusEnd, '收尾后点击棋盘不再改变状态');
+eq(byIdR['status'].textContent, statusEnd, '挑选项期间点击棋盘不改变状态');
 
-// 选「结束教程」→ 回主页
-choicesR[0].handlers.click({ target: choicesR[0] });
-eq(envR.sandbox.location.href, 'index.html', '选「结束教程」返回主页 index.html');
-
-// 选「完成对局」→ 目前与人机对战一致，先弹「暂未开放」
+// 选「完成对局」→ 目前与人机对战一致，先弹「暂未开放」（棋盘保持现状，还能改选「结束教程」）
 envR.sandbox.location.href = '';
 choicesR[1].handlers.click({ target: choicesR[1] });
 eq(byIdR['modal'].classList._s.has('show'), true, '选「完成对局」弹出提示');
 eq(byIdR['modalText'].textContent.includes('人机对战'), true, '提示文案提到人机对战');
 eq(envR.sandbox.location.href, '', '选「完成对局」不会离开当前页');
+eq(cellIn('I', 'e').classList._s.has('x'), false, '选「完成对局」不会让她落子');
+eq(byIdR['dlgChoices'].classList._s.has('show'), true, '选「完成对局」后选项仍留着（可改选「结束教程」）');
 byIdR['modalOk'].handlers.click({ target: byIdR['modalOk'] });
+
+console.log('\n----- 选「结束教程」：不直接回主页，交小薇先落下收尾那一手 → 判胜负、显示获胜者 -----');
+envR.sandbox.location.href = '';
+choicesR[0].handlers.click({ target: choicesR[0] });
+eq(byIdR['dlgChoices'].classList._s.has('show'), false, '点「结束教程」后选项收了起来');
+eq(envR.sandbox.location.href, '', '点「结束教程」不立刻回主页（先演示她的收尾一手）');
+eq(cellIn('I', 'e').classList._s.has('x'), false, '点击后她还没落子（先停一下再落）');
+timersR.tick(499);
+eq(cellIn('I', 'e').classList._s.has('x'), false, '点击后 0.499s 她仍未落子');
+timersR.tick(1);
+eq(cellIn('I', 'e').classList._s.has('x'), true, '点击后满 0.5s：她在 I 区 e 号格落下收尾那一手');
+eq(eOf('I').textContent, '✕', 'I-e 上是她的 ✕');
+
+// 这一手把下一手指回已满的 E 区 → 玩家无处可落 → 棋局走正常的结束判定
+eq(byIdR['status'].textContent.includes('游戏结束'), true, '玩家无处可落 → 游戏结束');
+eq(byIdR['status'].textContent.includes('◯ 无处落子'), true, '状态栏指出无处可落的是 ◯（玩家）');
+eq(byIdR['status'].textContent.includes('◯ 玩家获胜'), true, '状态栏显示获胜者：◯ 玩家获胜');
+eq(byIdR['scoreX'].textContent, 0, '交小薇 0 分（✕ 都落在各区域 e 格，没能连成线）');
+eq(byIdR['scoreO'].textContent, 4, '玩家 4 分（E 区四条线）');
+eq(byIdR['crownO'].classList._s.has('show'), true, '◯ 模块亮出皇冠（获胜者）');
+eq(byIdR['crownX'].classList._s.has('show'), false, '✕ 模块不亮皇冠');
+eq(byIdR['scoreBoxO'].classList._s.has('win-o'), true, '◯ 模块泛获胜光效');
+eq(byIdR['scoreBoxX'].classList._s.has('win-x'), false, '✕ 模块不泛获胜光效');
+eq(blockOf('E').classList._s.has('final-win-o'), true, '触发结束的 E 区用获胜方颜色标注');
+eq(blockOf('I').classList._s.has('active'), false, '结束后不再有绿色呼吸框');
+eq(cellIn('I', 'e').classList._s.has('win-hint'), false, '结束后红色结束手提示消失');
+
+// 她再补一句收尾台词；玩家点击后才回主页
+eq(winR.dialogueState(), 'typing', '她落完子后接上收尾台词');
+timersR.tick(100000);
+eq(dlgR.textContent, '咦，这盘棋是您赢了呀！那么教程就到这里啦，我们下次再见~', '收尾台词点出获胜结果');
+eq(byIdR['status'].textContent.includes('游戏结束'), true, '讲这句时棋局保持「游戏结束」态');
+fireClick(dlgR);
+eq(winR.dialogueState(), 'done', '玩家点击后对话结束');
+timersR.tick(1);
+eq(envR.sandbox.location.href, 'index.html', '收尾台词点掉后才返回主页 index.html');
 
 // 规则页「← 主页」也能返回
 envR.sandbox.location.href = '';

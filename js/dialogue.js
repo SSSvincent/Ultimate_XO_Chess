@@ -15,9 +15,12 @@
          轮到交小薇时她停 1 秒再落到「对应区域的 e 号格」，
          把下一手区域重新指回 E；如此往复，直到 E 区被下满为止
          期间玩家「本手得分」首次为 1 / 2 分时，她会停下来点评两句/三句，点评完再继续落子
-         E 区被下满后收尾：她不再落子（纯口头假设，绿框与红格在讲解期间一直亮着）
+         E 区被下满后收尾：她先不落子（纯口头假设，绿框与红格一直亮着）
          → 讲完「无法落子即结束 / 计分 / 得分多者获胜 / 学会全部规则」后，
-           对话框里弹出「结束教程（回主页）/ 完成对局」两个选项
+           对话框里弹出「结束教程 / 完成对局」两个选项：
+             结束教程 → 她才真正落下那一手（最后区域的 e 号格）→ 棋局判胜负、亮皇冠、给出比分
+                        → 她再补一句收尾台词 → 玩家点击后回主页
+             完成对局 → 暂未开放（占位提示，棋盘保持现状）
    对外暴露（供测试）：
      window.dialogueAdvance()   推进一次（等价于点击）
      window.dialogueState()     返回当前状态字符串
@@ -221,22 +224,21 @@
   // 每一档只播「首次」：本手第一次拿到 1 分 / 2 分时点评，之后同样的本手得分不再重复
   const playedComments = { 1: false, 2: false };
 
-  // 收尾讲解：E 区被下满后，她不再落子（只是「纯口头假设」）——
-  //   棋盘停在她的回合观感上：她的可落子区域保持绿色呼吸框，她将落的 e 号格标成红色结束手提示。
-  //   五句讲完（最后一句文本展现完）时收干净棋盘，并在对话框里弹出「结束教程 / 完成对局」两个选项。
+  // 收尾讲解：E 区被下满后，她先不落子（只是「纯口头假设」）——
+  //   棋盘停在她的回合观感上：她的可落子区域保持绿色呼吸框，她将落的 e 号格标成红色结束手提示；
+  //   绿框与红格会一直亮到玩家在两个选项里做出选择（红格指的就是她随后要落的那一格）。
   const END_LINES = [
     '如果当前玩家无法落子，那么游戏结束。',
     '玩家每不跨区域将三子连成一条线，便会获得一分。',
     '游戏结束时得分较多的玩家将会获胜~',
     '好了，现在您学会了这个游戏的所有规则。',
     { text: '您可以选择结束教程，也可以选择和交小薇完成这盘棋。',
-      after: function () { finishDemo(); showChoices(); } }
+      after: showChoices }                     // 末句说完 → 弹出「结束教程 / 完成对局」
   ];
 
-  // 收尾讲解全部说完 → 通知 game.js 把棋盘收回只读演示（撤掉绿框与红色结束手提示）
-  function finishDemo() {
-    if (typeof window.rulesEndDemo === 'function') window.rulesEndDemo();
-  }
+  // 收尾时她「将会落到」的那一格（最后区域的 e 号格）—— 就是红格所指的那一格。
+  //   玩家点「结束教程」后，她在这里真正落子（见 endTutorial）。
+  let finalPos = null;
 
   /* ---------- 收尾选项：对话框里弹出「结束教程 / 完成对局」 ---------- */
   let choicesShown = false;      // 选项已弹出 → 不再显示右下角的「继续」提示
@@ -246,15 +248,43 @@
     choicesShown = true;
     nextEl.classList.remove('show');          // 有选项了，不再提示「点击继续」
     choicesEl.innerHTML = '';                 // 幂等：重复调用只重建一次内容
-    addChoice('结束教程', false, function () {
-      location.href = 'index.html';           // 结束教程 → 回主页
-    });
+    addChoice('结束教程', false, endTutorial);
     addChoice('完成对局', true, function () {
       // TODO(待定)：这里的行为还未最终确定（跳对局页 / 本页接着下 / 暂未开放）。
-      //   现在与人机对战保持一致，先弹「暂未开放」。
+      //   现在与人机对战保持一致，先弹「暂未开放」；棋盘保持现状，玩家还可以改选「结束教程」。
       window.showToast('🚧', '暂未开放', '与交小薇对弈（人机对战）功能正在开发中，敬请期待');
     });
     choicesEl.classList.add('show');
+  }
+
+  /* 「结束教程」：不直接回主页 —— 交小薇先真正落下收尾那一手
+     （就是讲解里点出的「最后区域的 e 号格」，也是此刻标着红格的那一格）。
+     这一手过后玩家正好无处可落，棋局于是走正常的结束判定：亮皇冠、给出比分、显示获胜者。
+     之后再补一句收尾台词，玩家点击后才回主页。 */
+  function endTutorial() {
+    choicesShown = false;                                        // 选项撤下 → 恢复「点击继续」提示
+    if (choicesEl) { choicesEl.classList.remove('show'); choicesEl.innerHTML = ''; }
+    // 停顿一下再落子（与她其它回合的节奏一致：先想一下再落）
+    setTimeout(function () {
+      let result = null;
+      if (finalPos && typeof window.rulesFinalMove === 'function') {
+        result = window.rulesFinalMove(finalPos[0], finalPos[1]);
+      }
+      startDynamicLine({ text: closingText(result), onAdvance: goHome });
+    }, RESPONSE_DELAY);
+  }
+
+  // 收尾台词随胜负变化（这场演示里玩家 4 : 0 获胜，但三种结果都留了话）
+  function closingText(result) {
+    const w = result && result.winner;
+    if (w === 'O') return '咦，这盘棋是您赢了呀！那么教程就到这里啦，我们下次再见~';
+    if (w === 'X') return '这盘棋是我赢啦~ 不过您已经学会了全部规则，那么教程就到这里啦！';
+    return '这盘棋打了个平手！那么教程就到这里啦，我们下次再见~';
+  }
+
+  // 收尾台词说完、玩家点击 → 回主页（延后一个宏任务，避开 advance() 随后的「下一句」处理）
+  function goHome() {
+    setTimeout(function () { location.href = 'index.html'; }, 0);
   }
 
   // 生成一个选项按钮
@@ -311,8 +341,9 @@
 
   /* ---------- 演练循环：玩家每落一手，交小薇 1 秒后到「对应区域的 e 号格」回应 ----------
      玩家总在 E 区落子，而她的这一手会把下一手区域重新指回 E，于是玩家永远回到 E 区；
-     如此往复，直到 E 区被下满 —— 此时她停止落子，棋盘收回只读演示，
-     她只用「纯口头假设」补完「无法落子 → 结束」与计分、胜负的讲解。 */
+     如此往复，直到 E 区被下满 —— 此时她先停下不落子（绿框与红格保持亮着），
+     只用「纯口头假设」补完「无法落子 → 结束」与计分、胜负的讲解，
+     最后弹出「结束教程 / 完成对局」两个选项。 */
   let loopTimer = null;
 
   // 开始演练循环：由 game.js 解除只读，之后玩家的每一手都会回调 rulesAfterLoopMove
@@ -332,11 +363,13 @@
     function reply() {
       if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; }
 
-      // E 区已被玩家下满 → 这是收尾：她一步都不再落子（后面只是「纯口头假设」）。
+      // E 区已被玩家下满 → 这是收尾：她先一步都不落（后面只是「纯口头假设」）。
       //   棋盘保持「轮到 ✕」的观感（绿框仍亮在她可落子的区域、她将落的 e 号格标红），
-      //   她借此点出自己的可落子区域、说明这手会造成什么，再补上结束条件与计分规则；
-      //   三句讲完后由 END_LINES 末句的 onAdvance → finishDemo() 把棋盘收回只读演示。
+      //   她借此点出自己的可落子区域、说明这手会造成什么，再补上结束条件与计分规则。
+      //   绿框与红格会一直亮到玩家选完选项 —— 选「结束教程」时她才真正落下这一手
+      //   （见 endTutorial 与 game.js 的 window.rulesFinalMove）。
       if (eRegionFull()) {
+        finalPos = pos;      // 记下她将会落到的那一格（红格所指），供「结束教程」时真正落子
         setTimeout(function () {
           startDynamicLine({
             text: '请看向' + block + '区域，如果我在该区域的e号格落子，那么下一步你将无法落子。',

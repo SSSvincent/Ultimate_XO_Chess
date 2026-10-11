@@ -1,0 +1,682 @@
+/* ============================================================
+   究极井字棋 · 全站共用样式
+   所有页面（主页 / 规则介绍 / 对局）共用这一份样式表
+   ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+/* 浅蓝色渐变背景 */
+body {
+  background: linear-gradient(160deg, #cfeaff 0%, #a8d4f5 40%, #8ec9f2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* ---------- 星空背景 ---------- */
+#sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ---------- 主内容 ---------- */
+.wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ---------- 弹窗 ---------- */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(20, 50, 80, 0.35);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.modal-mask.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 20px;
+  padding: 34px 40px 28px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(20,50,80,0.4);
+  transform: translateY(20px) scale(0.92);
+  transition: transform 0.25s ease;
+}
+
+.modal-mask.show .modal-box {
+  transform: translateY(0) scale(1);
+}
+
+.modal-icon {
+  font-size: 46px;
+  line-height: 1;
+  margin-bottom: 14px;
+}
+
+.modal-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #1c4e75;
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+}
+
+.modal-text {
+  font-size: 14px;
+  color: #6d95b4;
+  letter-spacing: 1px;
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+
+.modal-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 32px;
+  font-size: 15px;
+  cursor: pointer;
+  color: #fff;
+  letter-spacing: 2px;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.modal-btn:active { transform: scale(0.96); }
+.modal-btn.primary { background: #2e7db2; }
+.modal-btn.primary:hover { background: #1c5f8e; }
+.modal-btn.ghost {
+  background: #e4eef5;
+  color: #4a789b;
+}
+.modal-btn.ghost:hover { background: #d5e4ef; }
+.modal-btn.danger { background: #e2543f; }
+.modal-btn.danger:hover { background: #c63f2c; }
+
+/* ---------- 页脚 ---------- */
+.footer {
+  position: fixed;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 1;
+  font-size: 12px;
+  color: #5a83a3;
+  letter-spacing: 1px;
+}
+
+.footer a {
+  color: #2e7db2;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.2s;
+}
+
+.footer a:hover {
+  color: #1c5f8e;
+  text-decoration: underline;
+}
+
+/* ---------- 主页 ---------- */
+#home {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+#home .big-title {
+  color: #1c4e75;
+  font-size: 72px;
+  font-weight: bold;
+  letter-spacing: 10px;
+  text-shadow: 0 3px 12px rgba(255,255,255,0.7);
+}
+
+#home .sub-title {
+  color: #3d6f96;
+  font-size: 20px;
+  letter-spacing: 4px;
+  margin-bottom: 40px;
+}
+
+#home .ver-line {
+  color: #6d95b4;
+  font-size: 14px;
+  letter-spacing: 2px;
+  margin-top: -34px;
+  margin-bottom: 24px;
+}
+
+#home .menu {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+#home .menu button {
+  border: none;
+  border-radius: 14px;
+  padding: 16px 80px;
+  font-size: 22px;
+  letter-spacing: 4px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.7);
+  color: #1c4e75;
+  font-weight: bold;
+  box-shadow: 0 4px 16px rgba(28,78,117,0.2);
+  transition: transform 0.15s, background 0.2s, box-shadow 0.2s;
+}
+
+#home .menu button:hover {
+  background: #2e7db2;
+  color: #fff;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(28,78,117,0.35);
+}
+
+/* ---------- 主区域：左右玩家模块 + 中间棋盘 ---------- */
+.playarea {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* ---------- 得分面板 ---------- */
+.score {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 20px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.55);
+  box-shadow: 0 2px 10px rgba(28,78,117,0.15);
+  min-width: 110px;
+  transition: box-shadow 0.3s ease;
+}
+
+.score .label { font-size: 14px; font-weight: bold; color: #14486e; }
+.score .num  { font-size: 34px; font-weight: bold; transition: text-shadow 0.3s ease; }
+.score.x .num { color: #e2543f; }
+.score.o .num { color: #2e7db2; }
+
+/* 当前落子玩家：模块边缘泛光（红/蓝） */
+.score.turn-x {
+  box-shadow: 0 0 0 3px #e2543f, 0 0 22px 4px rgba(226, 84, 63, 0.55);
+}
+.score.turn-o {
+  box-shadow: 0 0 0 3px #2e7db2, 0 0 22px 4px rgba(46, 125, 178, 0.55);
+}
+
+/* 游戏结束：获胜玩家模块边缘 + 分数同时泛光 */
+.score.win-x {
+  box-shadow: 0 0 0 3px #e2543f, 0 0 30px 6px rgba(226, 84, 63, 0.7);
+}
+.score.win-x .num {
+  text-shadow: 0 0 14px rgba(226, 84, 63, 0.85);
+}
+.score.win-o {
+  box-shadow: 0 0 0 3px #2e7db2, 0 0 30px 6px rgba(46, 125, 178, 0.7);
+}
+.score.win-o .num {
+  text-shadow: 0 0 14px rgba(46, 125, 178, 0.85);
+}
+
+/* 金色皇冠：绝对定位浮在模块上方，不占布局空间 */
+.crown {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25));
+  display: none;
+}
+.crown.show {
+  display: block;
+  animation: crown-in 0.4s ease;
+}
+@keyframes crown-in {
+  0%   { transform: translateX(-50%) scale(0.4) translateY(8px); opacity: 0; }
+  70%  { transform: translateX(-50%) scale(1.2) translateY(0); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
+h1 {
+  color: #1c4e75;
+  font-size: 30px;
+  letter-spacing: 6px;
+  text-shadow: 0 2px 8px rgba(255,255,255,0.6);
+}
+
+/* 对局/规则页标题下方的版本号 */
+#game .ver-line {
+  color: #6d95b4;
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-top: -8px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255,255,255,0.55);
+  padding: 8px 16px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 10px rgba(28,78,117,0.15);
+}
+
+.toolbar button {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 14px;
+  cursor: pointer;
+  background: #2e7db2;
+  color: #fff;
+  transition: background 0.2s;
+}
+
+.toolbar button:hover { background: #1c5f8e; }
+
+#status {
+  font-size: 18px;
+  font-weight: bold;
+  color: #14486e;
+  min-height: 26px;
+  text-shadow: 0 1px 3px rgba(255,255,255,0.7);
+}
+
+/* ---------- 棋盘：9x9 = 3x3 大格，每大格内 3x3 ---------- */
+#board {
+  position: relative;                     /* 作为规则页「指向大区域箭头」覆盖层的定位参照 */
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8px;
+  background: #000;                       /* 明显的黑色分隔线（大格之间） */
+  padding: 8px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(20,72,110,0.3);
+}
+
+.block {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+  background: #000;                       /* 小格之间的细黑线 */
+}
+
+/* 可落子区域：绿色边框高亮 + 轻微呼吸（吸引注意）。
+   对局页与规则介绍页共用同一份样式，所以两边都常驻呼吸效果。 */
+.block.active {
+  box-shadow: 0 0 0 4px #2ecc40;
+  animation: active-breathe 1.6s ease-in-out infinite;
+}
+@keyframes active-breathe {
+  0%, 100% { box-shadow: 0 0 0 4px #2ecc40; }
+  50%      { box-shadow: 0 0 0 6px #2ecc40, 0 0 18px rgba(46, 204, 64, 0.55); }
+}
+/* 可落子区域的空格淡绿底；但结束手提示格(win-hint)除外，
+   否则这里的高优先级规则会盖掉 .cell.win-hint 的淡红底 */
+.block.active .cell:not(.x):not(.o):not(.win-hint) {
+  background: #e8fbe9;
+}
+
+/* 可落子区域内的悬停反馈：底色在绿系里加深一档。
+   ⚠ 这组选择器的特异性必须高于上面的淡绿底规则(0,6,0)，
+   否则会被它覆盖 —— 之前就是它把 .cell:hover(0,2,0) 压掉，
+   导致鼠标移到绿框格子上时底色不变化、看不出落点反馈。
+   （结束手提示格 win-hint 由下面 .cell.win-hint:hover 单独处理，
+     所以这里用 :not(.win-hint) 让出。） */
+.block.active .cell:not(.x):not(.o):not(.win-hint):hover,
+.block.active .cell.x:hover,
+.block.active .cell.o:hover {
+  background: #cbead0;
+}
+
+/* 游戏结束：最后落子区域用获胜方颜色标注 */
+.block.final-win-x {
+  box-shadow: 0 0 0 5px #e2543f;
+  background: rgba(226, 84, 63, 0.25);
+}
+.block.final-win-o {
+  box-shadow: 0 0 0 5px #2e7db2;
+  background: rgba(46, 125, 178, 0.25);
+}
+
+.cell {
+  background: #eaf5fd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  font-size: 30px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.cell:hover { background: #d3ebfa; }
+.cell.x { color: #e2543f; }
+.cell.o { color: #2e7db2; }
+.cell.pop { animation: pop 0.3s ease; }
+
+/* 可结束游戏的落子格：淡红色提示 */
+.cell.win-hint {
+  background: #fbdcd7;
+}
+.cell.win-hint:hover {
+  background: #f6c6bf;
+}
+
+@keyframes pop {
+  0%   { transform: scale(0.6); }
+  70%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* ============================================================
+   规则介绍 · galgame 对话框
+   仅 rules.html 使用：棋盘下方的浅蓝色圆角对话框
+   ============================================================ */
+#dialogue {
+  position: relative;
+  width: min(780px, 92vw);
+  margin-top: 6px;
+  padding: 30px 34px 26px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(224, 241, 255, 0.96) 0%, rgba(197, 227, 251, 0.96) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12px 34px rgba(20, 72, 110, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  user-select: none;
+  animation: dlg-in 0.5s ease both;
+}
+
+@keyframes dlg-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 左上角名字牌：交小薇（红色） */
+.dlg-name {
+  position: absolute;
+  top: -17px;
+  left: 26px;
+  padding: 6px 20px;
+  border-radius: 999px;
+  background: #fff;
+  color: #e2543f;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  border: 2px solid rgba(226, 84, 63, 0.35);
+  box-shadow: 0 4px 14px rgba(226, 84, 63, 0.3);
+}
+
+/* 正文：逐字显示 */
+.dlg-text {
+  min-height: 62px;
+  font-size: 19px;
+  line-height: 1.7;
+  color: #14486e;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+/* 右下角「继续」提示：文本完全展现并经过 0.2s 冷却后出现 */
+.dlg-next {
+  position: absolute;
+  right: 20px;
+  bottom: 12px;
+  font-size: 15px;
+  color: #2e7db2;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  animation: dlg-blink 1s ease-in-out infinite;
+}
+.dlg-next.show { opacity: 1; }
+
+@keyframes dlg-blink {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(4px); }
+}
+
+/* 收尾选项：全部规则讲完后，对话框里弹出「结束教程 / 完成对局」。
+   由 js/dialogue.js 生成两个按钮并把容器加上 .show。 */
+.dlg-choices {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+.dlg-choices.show {
+  display: flex;
+  animation: choices-in 0.35s ease both;
+}
+@keyframes choices-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dlg-choice {
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 2px solid rgba(46, 125, 178, 0.45);
+  background: #fff;
+  color: #14486e;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease,
+              transform 0.12s ease, box-shadow 0.18s ease;
+}
+.dlg-choice:hover {
+  background: #e3f2ff;
+  border-color: #2e7db2;
+  box-shadow: 0 4px 14px rgba(46, 125, 178, 0.25);
+}
+.dlg-choice:active { transform: scale(0.98); }
+
+/* 主选项（完成对局）：高亮成蓝色实心 */
+.dlg-choice.primary {
+  background: linear-gradient(180deg, #5aa9e6 0%, #2e7db2 100%);
+  border-color: rgba(255, 255, 255, 0.9);
+  color: #fff;
+}
+.dlg-choice.primary:hover {
+  background: linear-gradient(180deg, #6cb6ee 0%, #3a8ac0 100%);
+  box-shadow: 0 4px 16px rgba(46, 125, 178, 0.4);
+}
+
+/* ============================================================
+   规则介绍 · 棋盘区域字母（A~I）
+   由 js/dialogue.js 在讲解「划分为9个大区域」时加上 #board.labels-on
+   每个大区域上覆盖一个大号字母（横跨整个 3x3 子棋盘），深蓝色、微微闪烁
+   ============================================================ */
+#board.labels-on .block {
+  position: relative;                        /* 作为覆盖层的定位参照 */
+}
+
+#board.labels-on .block::before {
+  content: attr(data-label);
+  position: absolute;
+  inset: 0;                                  /* 覆盖整个大区域 */
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 124px;                          /* 大号字母，几乎铺满整个区域 */
+  line-height: 1;
+  font-weight: bold;
+  color: #1f86db;                            /* 较深的蓝色 */
+  mix-blend-mode: multiply;                  /* 黑色格线可穿过字母，贴合棋盘观感 */
+  pointer-events: none;
+  animation: region-in 0.45s ease both,
+             region-blink 1.6s ease-in-out 0.55s infinite;
+}
+
+/* 字母淡入放大 */
+@keyframes region-in {
+  from { opacity: 0; transform: scale(0.75); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* 微微闪烁 —— 大区域字母、子棋盘小写字母、指向箭头三者共用同一个动画。
+   三处的 animation 必须保持相同的时长(1.6s) 与延迟(0.55s)，
+   并由 js/dialogue.js 的 restartBlink() 在同一帧统一点亮（第八句），
+   这样它们的闪烁相位才会永久保持一致。 */
+@keyframes region-blink {
+  0%, 100% { opacity: 1;    text-shadow: 0 0 0 rgba(31, 134, 219, 0); }
+  50%      { opacity: 0.55; text-shadow: 0 0 16px rgba(31, 134, 219, 0.6); }
+}
+
+/* ============================================================
+   规则介绍 · 子棋盘小格字母（a~i）
+   由 js/dialogue.js 在讲解「子棋盘编号」时加上 #board.sub-labels-on
+   仅在中间的 E 区域显示：9 个小格各覆盖一个小写字母，蓝色、微微闪烁
+   （做法与上面的区域字母一致，只是作用到小格上）
+   ============================================================ */
+#board.sub-labels-on .block[data-label="E"] .cell {
+  position: relative;                        /* 作为覆盖层的定位参照 */
+}
+
+#board.sub-labels-on .block[data-label="E"] .cell:not(.x):not(.o)::before {
+  content: attr(data-label);
+  position: absolute;
+  inset: 0;                                  /* 覆盖整个小格 */
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;                           /* 大号字母，几乎铺满小格 */
+  line-height: 1;
+  font-weight: bold;
+  color: #1f86db;
+  mix-blend-mode: multiply;                  /* 黑色格线可穿过字母 */
+  pointer-events: none;
+  animation: region-in 0.45s ease both,
+             region-blink 1.6s ease-in-out 0.55s infinite;
+}
+
+/* E 区已经显示小写字母时，不再叠加大写字母 E（避免两层字母重叠） */
+#board.sub-labels-on .block[data-label="E"]::before {
+  display: none;
+}
+
+/* ============================================================
+   规则介绍 · 指向大区域的箭头
+   由 js/dialogue.js 在讲解「一一对应」时插入 #board 内：
+   E 区 8 个小格各伸出一条箭头，指向它对应的那个大区域（e 格对应 E 自己，不画）
+   ============================================================ */
+.region-arrows {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;                                /* 压在区域字母之上 */
+  pointer-events: none;
+  display: none;
+}
+
+.region-arrows.show {
+  display: block;
+  animation: arrows-in 0.45s ease both,
+             region-blink 1.6s ease-in-out 0.55s infinite;   /* 与区域字母同节奏闪烁 */
+}
+
+.region-arrows line {
+  stroke: #2b9bef;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+
+.region-arrows .arrow-head { fill: #2b9bef; }
+
+@keyframes arrows-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ============================================================
+   规则介绍 · 聚焦 a → A
+   由 js/dialogue.js 在讲解「a 落子 → 下一名玩家只能去 A 区域」时加上 #board.focus-a
+   只保留三样东西：A 区的大写字母、E 区 a 格的小写字母、a→A 那一条箭头。
+   选择器特意带上 labels-on / sub-labels-on，以便用更高优先级盖住上面的通用规则。
+   ============================================================ */
+#board.labels-on.focus-a .block::before { display: none; }
+#board.labels-on.focus-a .block[data-label="A"]::before { display: flex; }
+
+#board.sub-labels-on.focus-a .block[data-label="E"] .cell:not(.x):not(.o)::before { display: none; }
+#board.sub-labels-on.focus-a .block[data-label="E"] .cell[data-label="a"]:not(.x):not(.o)::before { display: flex; }
+
+#board.focus-a .region-arrows line { display: none; }
+#board.focus-a .region-arrows line[data-to="A"] { display: block; }
+
+/* ============================================================
+   规则介绍 · 逐格巡回演示（b~i 依次「小格 → 箭头 → 大区域」）
+   由 js/dialogue.js 的 startTour() 加上 #board.tour-on：
+   显示权完全交给 .on 标记——只有带 .on 的那一个区域字母 / 小格字母 / 箭头可见，
+   并且演示期间一律不闪烁（animation:none）。
+   选择器同样叠上 labels-on / sub-labels-on 前缀来取得足够优先级。
+   ============================================================ */
+#board.labels-on.tour-on .block::before {
+  display: none;
+  animation: none;                          /* 演示期间不闪烁 */
+}
+#board.labels-on.tour-on .block.on::before { display: flex; }
+
+#board.sub-labels-on.tour-on .block[data-label="E"] .cell:not(.x):not(.o)::before {
+  display: none;
+  animation: none;                          /* 演示期间不闪烁 */
+}
+#board.sub-labels-on.tour-on .block[data-label="E"] .cell.on:not(.x):not(.o)::before { display: flex; }
+
+#board.tour-on .region-arrows { animation: none; }
+#board.tour-on .region-arrows line { display: none; }
+#board.tour-on .region-arrows line.on { display: block; }

@@ -1,0 +1,20 @@
+# ---- WorkBuddy 本地工具目录（记忆 / 会话数据，不随源码分发）----
+.workbuddy/
+
+# ---- 编辑器 / IDE ----
+.vscode/
+.idea/
+*.swp
+
+# ---- 操作系统 ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 临时 / 日志 ----
+_tmp_*
+*.log
+*.tmp
+
+# ---- 依赖（本项目为纯静态站，暂不需要，留作备用）----
+node_modules/

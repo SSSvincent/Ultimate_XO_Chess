@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>究极井字棋 v1.0.18</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<canvas id="sky"></canvas>
+
+<!-- 通用弹窗 -->
+<div id="modal" class="modal-mask">
+  <div class="modal-box">
+    <div class="modal-icon" id="modalIcon">🚧</div>
+    <div class="modal-title" id="modalTitle">暂未开放</div>
+    <div class="modal-text" id="modalText">该功能正在开发中，敬请期待</div>
+    <div class="modal-actions" id="modalActions">
+      <button class="modal-btn primary" id="modalOk">知道了</button>
+      <button class="modal-btn ghost" id="modalCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 主页 -->
+<div id="home">
+  <div class="big-title">究极井字棋</div>
+  <div class="sub-title">Ultimate XO Chess</div>
+  <div class="ver-line">v1.0.18</div>
+  <div class="menu" id="menuMain">
+    <button id="btnRules">规则介绍</button>
+    <button id="btnSingle">本地游玩</button>
+    <button id="btnOnline">多人联机</button>
+  </div>
+  <div class="menu" id="menuSingle" style="display:none;">
+    <button id="btnLocal">本地双人</button>
+    <button id="btnAi">人机对战</button>
+    <button id="btnBack">返回</button>
+  </div>
+</div>
+
+<!-- 页脚 -->
+<div class="footer">
+  作者：<a href="https://space.bilibili.com/510463176/" target="_blank" rel="noopener">拾柒ACTV</a>
+  &nbsp;·&nbsp; 由 <a href="https://www.workbuddy.cn/" target="_blank" rel="noopener">WorkBuddy</a> 制作
+  &nbsp;·&nbsp; 感谢您的游玩！
+</div>
+
+<script src="js/sky.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>

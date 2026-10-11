@@ -16,5 +16,8 @@ _tmp_*
 *.log
 *.tmp
 
+# ---- 发布标记（WorkBuddy 生成的内部文件，不入库）----
+.wbapp_*.genie
+
 # ---- 依赖（本项目为纯静态站，暂不需要，留作备用）----
 node_modules/

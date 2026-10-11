@@ -862,17 +862,26 @@ eq(blockOf('E').classList._s.has('final-win-o'), true, '触发结束的 E 区用
 eq(blockOf('I').classList._s.has('active'), false, '结束后不再有绿色呼吸框');
 eq(cellIn('I', 'e').classList._s.has('win-hint'), false, '结束后红色结束手提示消失');
 
-// 她再补一句收尾台词；玩家点击后才回主页
+// 她再补最后一句收尾台词；这句说完就停在结束画面上，点击屏幕不会跳转
 eq(winR.dialogueState(), 'typing', '她落完子后接上收尾台词');
 timersR.tick(100000);
 eq(dlgR.textContent, '咦，这盘棋是您赢了呀！那么教程就到这里啦，我们下次再见~', '收尾台词点出获胜结果');
 eq(byIdR['status'].textContent.includes('游戏结束'), true, '讲这句时棋局保持「游戏结束」态');
 fireClick(dlgR);
 eq(winR.dialogueState(), 'done', '玩家点击后对话结束');
-timersR.tick(1);
-eq(envR.sandbox.location.href, 'index.html', '收尾台词点掉后才返回主页 index.html');
+timersR.tick(100000);
+eq(envR.sandbox.location.href, '', '收尾台词点掉后**停在本页**，不返回主页');
 
-// 规则页「← 主页」也能返回
+// 停在结束画面：再点屏幕也无效（仍不跳转、结束态不变）
+const statusEnd2 = byIdR['status'].textContent;
+fireClick(dlgR);
+eq(winR.dialogueState(), 'done', '结束后再点击屏幕：对话仍为结束态');
+eq(byIdR['status'].textContent, statusEnd2, '结束后再点击屏幕：棋局状态不变');
+eq(envR.sandbox.location.href, '', '结束后再点击屏幕：依然停在本页');
+opsR.clickCell(3, 3);                                        // E-a（已有子）
+eq(envR.sandbox.location.href, '', '结束后点棋盘依然停在本页');
+
+// 只有上方的「← 主页」才能返回主页
 envR.sandbox.location.href = '';
 byIdR['back'].handlers.click({ target: byIdR['back'] });
 byIdR['modalOk'].handlers.click({ target: byIdR['modalOk'] });

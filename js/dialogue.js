@@ -19,7 +19,8 @@
          → 讲完「无法落子即结束 / 计分 / 得分多者获胜 / 学会全部规则」后，
            对话框里弹出「结束教程 / 完成对局」两个选项：
              结束教程 → 她才真正落下那一手（最后区域的 e 号格）→ 棋局判胜负、亮皇冠、给出比分
-                        → 她再补一句收尾台词 → 玩家点击后回主页
+                        → 她再补一句收尾台词 → 说完停在结束画面上（点击屏幕不再跳转，
+                          要回主页请用上方的「← 主页」按钮）
              完成对局 → 暂未开放（占位提示，棋盘保持现状）
    对外暴露（供测试）：
      window.dialogueAdvance()   推进一次（等价于点击）
@@ -260,7 +261,8 @@
   /* 「结束教程」：不直接回主页 —— 交小薇先真正落下收尾那一手
      （就是讲解里点出的「最后区域的 e 号格」，也是此刻标着红格的那一格）。
      这一手过后玩家正好无处可落，棋局于是走正常的结束判定：亮皇冠、给出比分、显示获胜者。
-     之后再补一句收尾台词，玩家点击后才回主页。 */
+     最后再补一句收尾台词；这句说完就**停在结束画面上**，
+     点击屏幕不会跳转（要回主页请用上方的「← 主页」按钮）。 */
   function endTutorial() {
     choicesShown = false;                                        // 选项撤下 → 恢复「点击继续」提示
     if (choicesEl) { choicesEl.classList.remove('show'); choicesEl.innerHTML = ''; }
@@ -270,7 +272,7 @@
       if (finalPos && typeof window.rulesFinalMove === 'function') {
         result = window.rulesFinalMove(finalPos[0], finalPos[1]);
       }
-      startDynamicLine({ text: closingText(result), onAdvance: goHome });
+      startDynamicLine(closingText(result));   // 最后一句：说完就停住，点击屏幕不再离开本页
     }, RESPONSE_DELAY);
   }
 
@@ -280,11 +282,6 @@
     if (w === 'O') return '咦，这盘棋是您赢了呀！那么教程就到这里啦，我们下次再见~';
     if (w === 'X') return '这盘棋是我赢啦~ 不过您已经学会了全部规则，那么教程就到这里啦！';
     return '这盘棋打了个平手！那么教程就到这里啦，我们下次再见~';
-  }
-
-  // 收尾台词说完、玩家点击 → 回主页（延后一个宏任务，避开 advance() 随后的「下一句」处理）
-  function goHome() {
-    setTimeout(function () { location.href = 'index.html'; }, 0);
   }
 
   // 生成一个选项按钮

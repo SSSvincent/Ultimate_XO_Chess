@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人机对战 · 究极井字棋 v1.0.21</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<!-- data-mode="play" → 正常对局 -->
+<body data-mode="play">
+
+<canvas id="sky"></canvas>
+
+<!-- 通用弹窗 -->
+<div id="modal" class="modal-mask">
+  <div class="modal-box">
+    <div class="modal-icon" id="modalIcon">🚧</div>
+    <div class="modal-title" id="modalTitle">暂未开放</div>
+    <div class="modal-text" id="modalText">该功能正在开发中，敬请期待</div>
+    <div class="modal-actions" id="modalActions">
+      <button class="modal-btn primary" id="modalOk">知道了</button>
+      <button class="modal-btn ghost" id="modalCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 对局页 -->
+<div class="wrap" id="game">
+  <h1>✦ 究极井字棋 · 人机对战 ✦</h1>
+  <div class="ver-line">v1.0.21</div>
+
+  <div class="toolbar">
+    <button id="back">← 主页</button>
+    <button id="restart">↻ 重新开始</button>
+    <button id="undo">↩ 悔棋</button>
+  </div>
+
+  <div id="status">轮到 ✕ 落子</div>
+
+  <div class="playarea">
+    <div class="score x" id="scoreBoxX">
+      <span class="crown" id="crownX"><svg viewBox="0 0 24 24" width="34" height="34"><path d="M3 7l4 3 5-6 5 6 4-3-1.5 11h-15L3 7z" fill="#f6b93b"/><path d="M3 7l1.5 11h15L21 7l-4 3-5-6-5 6-4-3z" fill="none" stroke="#d99a1b" stroke-width="1"/><rect x="4.5" y="18" width="15" height="2.5" rx="1" fill="#d99a1b"/></svg></span>
+      <span class="label" id="labelX">✕ 玩家</span>
+      <span class="num" id="scoreX">0</span>
+    </div>
+
+    <div id="board"></div>
+
+    <div class="score o" id="scoreBoxO">
+      <span class="crown" id="crownO"><svg viewBox="0 0 24 24" width="34" height="34"><path d="M3 7l4 3 5-6 5 6 4-3-1.5 11h-15L3 7z" fill="#f6b93b"/><path d="M3 7l1.5 11h15L21 7l-4 3-5-6-5 6-4-3z" fill="none" stroke="#d99a1b" stroke-width="1"/><rect x="4.5" y="18" width="15" height="2.5" rx="1" fill="#d99a1b"/></svg></span>
+      <span class="label" id="labelO">◯ 对手</span>
+      <span class="num" id="scoreO">0</span>
+    </div>
+  </div>
+</div>
+
+<!-- 页脚 -->
+<div class="footer">
+  作者：<a href="https://space.bilibili.com/510463176/" target="_blank" rel="noopener">拾柒ACTV</a>
+  &nbsp;·&nbsp; 由 <a href="https://www.workbuddy.cn/" target="_blank" rel="noopener">WorkBuddy</a> 制作
+  &nbsp;·&nbsp; 感谢您的游玩！
+</div>
+
+<script src="js/sky.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ai-play.js"></script>
+</body>
+</html>

@@ -13,11 +13,14 @@ const MODAL    = fs.readFileSync(path.join(root, 'js', 'modal.js'), 'utf8');
 const GAME     = fs.readFileSync(path.join(root, 'js', 'game.js'), 'utf8');
 const HOME     = fs.readFileSync(path.join(root, 'js', 'home.js'), 'utf8');
 const DIALOGUE = fs.readFileSync(path.join(root, 'js', 'dialogue.js'), 'utf8');
+const AI       = fs.readFileSync(path.join(root, 'js', 'ai.js'), 'utf8');
+const AIPLAY   = fs.readFileSync(path.join(root, 'js', 'ai-play.js'), 'utf8');
 
 /* 所有页面可能出现的元素 id */
 const ALL_IDS = [
-  'sky','board','status','restart','undo','scoreX','scoreO','crownX','crownO','scoreBoxX','scoreBoxO','labelX',
-  'home','game','menuMain','menuSingle','btnRules','btnSingle','btnOnline','btnLocal','btnAi','btnBack','back',
+  'sky','board','status','restart','undo','scoreX','scoreO','crownX','crownO','scoreBoxX','scoreBoxO','labelX','labelO',
+  'home','game','menuMain','menuSingle','menuAi','btnRules','btnSingle','btnOnline','btnLocal','btnAi','btnBack','back',
+  'btnAiXiaoyan','btnAiJiaoxiaowei','btnAiBack',
   'modal','modalIcon','modalTitle','modalText','modalActions','modalOk','modalCancel',
   'dialogue','dlgName','dlgText','dlgNext','dlgChoices'
 ];
@@ -149,16 +152,29 @@ function createEnv(mode, excludeIds) {
       },
       body
     },
-    window: { addEventListener() {}, innerWidth: 1200, innerHeight: 800 },
-    location: { href: '' },
+    window: { addEventListener() {}, innerWidth: 1200, innerHeight: 800, location: { search: '' } },
+    location: { href: '', search: '' },
     requestAnimationFrame: () => {},
     setTimeout: timers.setTimeout,
     clearTimeout: timers.clearTimeout,
     setInterval: timers.setInterval,
-    clearInterval: timers.clearInterval
+    clearInterval: timers.clearInterval,
+    // AI 调度所需的最小桩
+    MutationObserver: function () { this.observe = function () {}; this.disconnect = function () {}; },
+    URLSearchParams: function (s) {
+      this._p = {};
+      (s || '').replace(/^\?/, '').split('&').forEach(function (kv) {
+        if (!kv) return;
+        const i = kv.indexOf('=');
+        const k = i < 0 ? kv : kv.slice(0, i);
+        const v = i < 0 ? '' : kv.slice(i + 1);
+        this._p[k] = v;
+      }, this);
+      this.get = function (k) { return this._p[k] || null; };
+    }
   };
   vm.createContext(sandbox);
-  vm.runInContext([SKY, MODAL, GAME, DIALOGUE, HOME].join('\n;\n'), sandbox, { filename: 'bundle.js' });
+  vm.runInContext([SKY, MODAL, GAME, DIALOGUE, HOME, AI, AIPLAY].join('\n;\n'), sandbox, { filename: 'bundle.js' });
 
   return { sandbox, byId, allEls, timers, docHandlers };
 }
@@ -277,7 +293,7 @@ for (let i = 0; i < 3; i++) {
   }
 }
 
-console.log('\n===== 弹窗：多人联机 / 人机对战 显示"暂未开放" =====');
+console.log('\n===== 弹窗：多人联机 显示"暂未开放"；人机对战 进入选择对手菜单 =====');
 byId['btnOnline'].handlers.click({ target: byId['btnOnline'] });
 eq(byId['modal'].classList._s.has('show'), true, '点击多人联机后弹窗显示');
 eq(byId['modalText'].textContent.includes('多人联机'), true, '弹窗文案提到多人联机');
@@ -287,9 +303,13 @@ eq(byId['modal'].classList._s.has('show'), false, '点"知道了"后弹窗关闭
 
 byId['btnSingle'].handlers.click({ target: byId['btnSingle'] });   // 切换二级菜单
 byId['btnAi'].handlers.click({ target: byId['btnAi'] });
-eq(byId['modal'].classList._s.has('show'), true, '点击人机对战弹窗显示');
-eq(byId['modalText'].textContent.includes('人机对战'), true, '弹窗文案提到人机对战');
-byId['modalOk'].handlers.click({ target: byId['modalOk'] });
+eq(byId['menuAi'].style.display, 'flex', '点击人机对战后进入「选择对手」三级菜单');
+eq(byId['menuSingle'].style.display, 'none', '同时隐藏二级菜单');
+
+// 返回按钮从三级菜单回到二级菜单
+byId['btnAiBack'].handlers.click({ target: byId['btnAiBack'] });
+eq(byId['menuAi'].style.display, 'none', '点「返回」隐藏选择对手菜单');
+eq(byId['menuSingle'].style.display, 'flex', '点「返回」回到二级菜单');
 
 console.log('\n===== 页面跳转 =====');
 env.sandbox.location.href = '';
@@ -299,6 +319,17 @@ eq(env.sandbox.location.href, 'rules.html', '点「规则介绍」跳转到 rule
 env.sandbox.location.href = '';
 byId['btnLocal'].handlers.click({ target: byId['btnLocal'] });
 eq(env.sandbox.location.href, 'game.html', '点「本地双人」跳转到 game.html');
+
+// 人机对战：选对手跳转到 ai.html（带难度参数）
+byId['btnSingle'].handlers.click({ target: byId['btnSingle'] });
+byId['btnAi'].handlers.click({ target: byId['btnAi'] });
+env.sandbox.location.href = '';
+byId['btnAiXiaoyan'].handlers.click({ target: byId['btnAiXiaoyan'] });
+eq(env.sandbox.location.href, 'ai.html?ai=xiaoyan', '选「燕小北」跳转到 ai.html?ai=xiaoyan');
+
+env.sandbox.location.href = '';
+byId['btnAiJiaoxiaowei'].handlers.click({ target: byId['btnAiJiaoxiaowei'] });
+eq(env.sandbox.location.href, 'ai.html?ai=jiaoxiaowei', '选「交小薇」跳转到 ai.html?ai=jiaoxiaowei');
 
 env.sandbox.location.href = '';
 byId['back'].handlers.click({ target: byId['back'] });
@@ -886,6 +917,116 @@ envR.sandbox.location.href = '';
 byIdR['back'].handlers.click({ target: byIdR['back'] });
 byIdR['modalOk'].handlers.click({ target: byIdR['modalOk'] });
 eq(envR.sandbox.location.href, 'index.html', '规则页「← 主页」返回 index.html');
+
+/* ============================================================
+   三、人机引擎（js/ai.js 纯逻辑，独立 vm 环境，不依赖 DOM）
+   ============================================================ */
+console.log('\n===== 人机引擎：两个难度的落子决策 =====');
+const aiSandbox = { console, Math, window: {} };
+aiSandbox.window = aiSandbox;   // ai.js 里挂 window.aiChooseMove，用自身兜底
+vm.createContext(aiSandbox);
+vm.runInContext(AI, aiSandbox, { filename: 'ai.js' });
+const ai = aiSandbox.window;
+
+function emptyGrid() { return Array.from({ length: 9 }, () => Array(9).fill('')); }
+function legalCells(g, nb) {
+  return ai.__ai.legalMoves(g, nb);
+}
+
+// —— 合法落子 & 区域限制 ——
+{
+  const g = emptyGrid();
+  const m = legalCells(g, 4);            // 只允许 E 区
+  eq(m.length, 9, '开局 E 区有 9 个可落格');
+  eq(m.every(mv => Math.floor(mv.r / 3) * 3 + Math.floor(mv.c / 3) === 4), true, '开局所有可落格都在 E 区');
+}
+
+// —— 简单 AI：必堵对手的「即将得分」 ——
+//   E 区小格全局坐标：a(3,3) b(3,4) c(3,5)；对手 X 占 a、b，再占 c 即三连 → O 应堵 c
+{
+  const g = emptyGrid();
+  g[3][3] = 'X'; g[3][4] = 'X';
+  const mv = ai.aiChooseMove(g, 'O', 4, 'easy');
+  eq([mv.r, mv.c].join(','), '3,5', '简单 AI：堵住对手 a-b-c 的最后一格 c');
+}
+
+// —— 简单 AI：有得分机会时优先自己得分 ——
+{
+  const g = emptyGrid();
+  g[3][3] = 'O'; g[3][4] = 'O';          // 自己 a、b 已占，再下 c 即三连
+  const mv = ai.aiChooseMove(g, 'O', 4, 'easy');
+  eq([mv.r, mv.c].join(','), '3,5', '简单 AI：自己 a-b 连成，抢 c 得分');
+}
+
+// —— 较难 AI：也能堵对手（minimax 必堵必得分点） ——
+{
+  const g = emptyGrid();
+  g[3][3] = 'X'; g[3][4] = 'X';
+  const mv = ai.aiChooseMove(g, 'O', 4, 'hard');
+  eq([mv.r, mv.c].join(','), '3,5', '较难 AI：同样堵住 c');
+}
+
+// —— 较难 AI：自己两连必成三连时果断得分 ——
+{
+  const g = emptyGrid();
+  g[3][3] = 'O'; g[3][4] = 'O';
+  const mv = ai.aiChooseMove(g, 'O', 4, 'hard');
+  eq([mv.r, mv.c].join(','), '3,5', '较难 AI：自己两连，抢 c 得分');
+}
+
+// —— 无处可落返回 null ——
+{
+  const g = emptyGrid();
+  for (let r = 3; r < 6; r++) for (let c = 3; c < 6; c++) g[r][c] = 'X';  // E 区填满
+  const mv = ai.aiChooseMove(g, 'O', 4, 'easy');
+  eq(mv, null, 'E 区已满 → AI 无处可落返回 null');
+}
+
+// —— 估值函数：三连计数 ——
+{
+  const g = emptyGrid();
+  g[0][0] = 'O'; g[0][1] = 'O'; g[0][2] = 'O';   // A 区 O 一条线
+  g[8][6] = 'X'; g[8][7] = 'X'; g[8][8] = 'X';   // I 区 X 一条线
+  eq(ai.__ai.totalScore(g, 'O'), 1, 'O 在 A 区有一条三连');
+  eq(ai.__ai.totalScore(g, 'X'), 1, 'X 在 I 区有一条三连');
+  eq(ai.__ai.evaluate(g, 'O'), 0, '当前平手，估值 = 0');
+}
+
+// —— 落子后必须留在合法区域，且不覆盖已有子 ——
+{
+  const g = emptyGrid();
+  g[4][4] = 'X';
+  const mv = ai.aiChooseMove(g, 'O', 4, 'hard');
+  eq([mv.r, mv.c].join(',') === '4,4', false, 'AI 不会落在已有子的格');
+  eq(Math.floor(mv.r / 3) * 3 + Math.floor(mv.c / 3), 4, 'AI 落子仍在 E 区');
+}
+
+/* ============================================================
+   四、人机对局：game.js 暴露的 AI 接口（读取状态 / 落子）
+   ============================================================ */
+console.log('\n===== 人机对局：gameGetState / aiApplyMove =====');
+{
+  // 新建一个干净的 play 环境（前面的 env 已被对局测试玩到终局）
+  const envAI = createEnv('play', RULES_ONLY_IDS);
+  const st0 = envAI.sandbox.window.gameGetState();
+  eq(st0.current, 'X', 'gameGetState：初始轮到 ✕');
+  eq(st0.nextBlock, 4, 'gameGetState：初始限定 E 区域');
+  eq(st0.gameOver, false, 'gameGetState：初始未结束');
+
+  // 玩家 ✕ 落 E-e → 轮到 ◯（AI）
+  envAI.sandbox.window.aiApplyMove(4, 4);
+  let st = envAI.sandbox.window.gameGetState();
+  eq(st.current, 'O', '玩家落 E-e 后轮到 ◯');
+
+  // 让 AI（交小薇，hard）决策并落子
+  const mv = ai.aiChooseMove(st.grid, st.current, st.nextBlock, 'hard');
+  eq(mv !== null, true, 'AI 有可落之处');
+  eq(Math.floor(mv.r / 3) * 3 + Math.floor(mv.c / 3), st.nextBlock, 'AI 落在被指定的区域');
+  const ok = envAI.sandbox.window.aiApplyMove(mv.r, mv.c);
+  eq(ok, true, 'AI 落子成功');
+  st = envAI.sandbox.window.gameGetState();
+  eq(st.current, 'X', 'AI 落子后轮回到 ✕');
+}
 
 console.log('\n结果: ' + PASS + ' 通过, ' + FAIL + ' 失败');
 process.exit(FAIL ? 1 : 0);

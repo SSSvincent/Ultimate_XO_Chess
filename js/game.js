@@ -443,6 +443,31 @@
     }
   }
 
+  /* ---------- 人机对局接口（供 ai.html 的 AI 调度器读取状态 / 落子） ---------- */
+  // 读出当前棋局状态（供 AI 决策）
+  window.gameGetState = function () {
+    return {
+      grid: grid.map(row => row.slice()),
+      current: current,
+      nextBlock: nextBlock,
+      gameOver: gameOver,
+      winner: winner,
+      scoreX: scoreX,
+      scoreO: scoreO
+    };
+  };
+
+  // AI 落子：走与玩家点击完全相同的落子逻辑（忽略只读限制，由调用方保证时机）
+  window.aiApplyMove = function (r, c) {
+    if (!grid || gameOver) return false;
+    if (readOnly) return false;
+    if (grid[r][c]) return false;
+    const bi = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+    if (nextBlock !== null && nextBlock !== bi) return false;
+    applyMove(r, c);
+    return true;
+  };
+
   /* ---------- 按钮绑定（按页面实际存在的按钮） ---------- */
   // 「重新开始」→ 确认弹窗
   if (btnRestart) {

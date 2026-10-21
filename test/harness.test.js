@@ -857,16 +857,6 @@ const statusEnd = byIdR['status'].textContent;
 opsR.clickCell(3, 3);                                        // E-a（已有子）
 eq(byIdR['status'].textContent, statusEnd, '挑选项期间点击棋盘不改变状态');
 
-// 选「完成对局」→ 目前与人机对战一致，先弹「暂未开放」（棋盘保持现状，还能改选「结束教程」）
-envR.sandbox.location.href = '';
-choicesR[1].handlers.click({ target: choicesR[1] });
-eq(byIdR['modal'].classList._s.has('show'), true, '选「完成对局」弹出提示');
-eq(byIdR['modalText'].textContent.includes('人机对战'), true, '提示文案提到人机对战');
-eq(envR.sandbox.location.href, '', '选「完成对局」不会离开当前页');
-eq(cellIn('I', 'e').classList._s.has('x'), false, '选「完成对局」不会让她落子');
-eq(byIdR['dlgChoices'].classList._s.has('show'), true, '选「完成对局」后选项仍留着（可改选「结束教程」）');
-byIdR['modalOk'].handlers.click({ target: byIdR['modalOk'] });
-
 console.log('\n----- 选「结束教程」：不直接回主页，交小薇先落下收尾那一手 → 判胜负、显示获胜者 -----');
 envR.sandbox.location.href = '';
 choicesR[0].handlers.click({ target: choicesR[0] });
@@ -917,6 +907,132 @@ envR.sandbox.location.href = '';
 byIdR['back'].handlers.click({ target: byIdR['back'] });
 byIdR['modalOk'].handlers.click({ target: byIdR['modalOk'] });
 eq(envR.sandbox.location.href, 'index.html', '规则页「← 主页」返回 index.html');
+
+/* ============================================================
+   二·五、选「完成对局」：交小薇让位燕小北，燕小北（easy）接管对局
+   —— 用全新 readonly 环境重演到「收尾选项」，再验证让位与接管流程
+   ============================================================ */
+console.log('\n===== 选「完成对局」：交小薇让位燕小北，燕小北（easy）接管对局 =====');
+{
+  const envX = createEnv('readonly', ['restart', 'undo']);
+  const byIdX = envX.byId;
+  const opsX = makeOps(envX);
+  const winX = envX.sandbox.window;
+  const timersX = envX.timers;
+  const fireClickX = (target) => (envX.docHandlers.click || []).forEach(fn => fn({ target }));
+  const dlgX = byIdX['dlgText'];
+  const blockOfX = lb => envX.allEls.filter(e => e.classList._s.has('block') && e.dataset.label === lb).pop();
+  const cellInX = (lb, cl) => blockOfX(lb).children.find(c => c.dataset.label === cl);
+
+  // —— 快进：走完 15 句静态台词，解锁棋盘 ——
+  timersX.tick(100000);                       // LINE1 逐字完成
+  for (let i = 0; i < 14; i++) {              // LINE2 ~ LINE15
+    fireClickX(dlgX);                         // 推进到下一句
+    timersX.tick(100000);                     // 逐字完成（第 15 句 after 解锁棋盘）
+  }
+
+  // —— 第一手：玩家落 E-a（practice），交小薇回应 A-e，接「继续试试看」 ——
+  opsX.clickCell(3, 3);                       // E-a（全局坐标）
+  fireClickX(dlgX);                           // 落子点击冒泡 → 旧台词 done
+  timersX.tick(1);                            // 动态台词开始
+  timersX.tick(100000);                       // 动态台词完成
+  fireClickX(dlgX);                           // 推进 → 交小薇 0.5s 后落 A-e
+  timersX.tick(500);                          // 交小薇落 A-e
+  timersX.tick(100000);                       // 「继续试试看」完成 → 进入演练循环
+
+  // —— 演练循环：玩家落 E 区剩余 7 格（b c d f g h i），交小薇回应，直到 E 区满 ——
+  //   每手 { pos: 全局坐标 [r,c], comment }：comment = 落子后交小薇要点评的句数（0 = 不点评）
+  const loopHands = [
+    { pos: [3,4], comment: 0 },   // E-b：不得分
+    { pos: [3,5], comment: 2 },   // E-c：本手首次得 1 分 → 点评两句
+    { pos: [4,3], comment: 0 },   // E-d：不得分
+    { pos: [5,3], comment: 0 },   // E-g：得 1 分但已播过 → 不点评
+    { pos: [4,5], comment: 0 },   // E-f：不得分
+    { pos: [5,4], comment: 0 },   // E-h：不得分
+    { pos: [5,5], comment: 3 },   // E-i：本手首次得 2 分 → 点评三句（E 区满，触发收尾）
+  ];
+  for (let h = 0; h < loopHands.length; h++) {
+    const hand = loopHands[h];
+    const isLast = (h === loopHands.length - 1);
+    opsX.clickCell(...hand.pos);
+    fireClickX(dlgX);                         // 落子点击冒泡
+    if (!isLast) {
+      // 点评（若有）：每句 tick 完成 + fireClick 推进；末句点掉后交小薇才落子
+      for (let k = 0; k < hand.comment; k++) {
+        timersX.tick(1);                      // 点评第 k 句开始
+        timersX.tick(100000);                 // 逐字完成
+        fireClickX(dlgX);                     // 推进（末句触发 reply）
+      }
+      timersX.tick(100000);                   // 交小薇 1s 后落对应区域 e 格
+    } else {
+      // E-i：得 2 分，点评三句，之后进入收尾讲解（不再落子）
+      for (let k = 0; k < hand.comment; k++) {
+        timersX.tick(1);
+        timersX.tick(100000);
+        fireClickX(dlgX);
+      }
+      // 收尾讲解：先一句「请看向 I 区域…」，点掉后接 END_LINES 五句
+      timersX.tick(1);
+      timersX.tick(100000);                   // 「请看向 I 区域…」完成
+      fireClickX(dlgX);                       // 触发 END_LINES
+      timersX.tick(1);
+      for (let k = 0; k < 5; k++) {           // END_LINES 五句（末句 after: showChoices）
+        timersX.tick(100000);
+        fireClickX(dlgX);
+      }
+    }
+  }
+
+  // 此时收尾选项已弹出
+  eq(byIdX['dlgChoices'].classList._s.has('show'), true, '（完成对局分支）收尾选项已弹出');
+
+  // —— 点「完成对局」→ 交小薇三句让位 + 改名 + 燕小北「我来啦」 ——
+  envX.sandbox.location.href = '';
+  const choicesX = byIdX['dlgChoices'].children;
+  choicesX[1].handlers.click({ target: choicesX[1] });
+  eq(byIdX['dlgChoices'].classList._s.has('show'), false, '选「完成对局」后选项收了起来');
+  eq(envX.sandbox.location.href, '', '选「完成对局」不会离开当前页');
+  eq(byIdX['dlgName'].textContent, '交小薇', '让位前对话框名字仍是「交小薇」');
+
+  timersX.tick(1);
+  timersX.tick(100000);
+  eq(dlgX.textContent, '想要和我完成对局嘛？', '交小薇让位第一句');
+  fireClickX(dlgX);
+  timersX.tick(100000);
+  eq(dlgX.textContent, '不错的选择，但是作为入门新手，', '交小薇让位第二句');
+  fireClickX(dlgX);
+  timersX.tick(100000);
+  eq(dlgX.textContent, '不妨和我的妹妹燕小北先完成这一局吧~', '交小薇让位第三句');
+
+  // 点掉第三句 → 改名 + 燕小北说「我来啦」
+  fireClickX(dlgX);
+  eq(byIdX['dlgName'].textContent, '燕小北', '对话框名字改为「燕小北」');
+  eq(byIdX['labelX'].textContent, '✕ 燕小北', '左侧选手名改为「✕ 燕小北」');
+  timersX.tick(1);                     // 触发「我来啦」逐字
+  timersX.tick(165);                   // 「我来啦」3 字逐字完成 + after 触发接管
+  eq(dlgX.textContent, '我来啦', '燕小北说「我来啦」');
+
+  // 「我来啦」说完 → 燕小北接管对局（解除只读，轮到 ✕）
+  //   此刻燕小北的 600ms 落子延时尚未到，状态栏应是「轮到 ✕」
+  eq(byIdX['status'].textContent.includes('轮到 ✕'), true, '燕小北接管后状态栏是「轮到 ✕」');
+  eq(byIdX['status'].textContent.includes('I 区域'), true, '燕小北仍被指定在 I 区域落子');
+  eq(cellInX('I', 'e').classList._s.has('win-hint'), true, '接管后 I-e 仍是结束手提示格（落它会让玩家无处可落）');
+
+  // 燕小北（easy）600ms 思考后落子：落在 I 区域某一空位 → 轮回到玩家 ◯
+  timersX.tick(600);
+  {
+    const st = winX.gameGetState();
+    eq(st.current, 'O', '燕小北在 I 区落子后轮回到玩家 ◯');
+    const filled = ['a','b','c','d','e','f','g','h','i']
+      .filter(ci => cellInX('I', ci).classList._s.has('x') || cellInX('I', ci).classList._s.has('o')).length;
+    eq(filled >= 1, true, '燕小北确在 I 区落了子');
+  }
+
+  // 燕小北胜负台词（纯函数映射：她执 ✕）
+  eq(winX.xiaobeiResultText('O'), '呜呜呜呜呜，可恶，我还是输了！', '燕小北输了 → 哭腔台词');
+  eq(winX.xiaobeiResultText('X'), '嗯哼~就是如此简单~', '燕小北赢了 → 得意台词');
+  eq(winX.xiaobeiResultText(null), '唔…居然是平局呀。', '平局 → 中性台词');
+}
 
 /* ============================================================
    三、人机引擎（js/ai.js 纯逻辑，独立 vm 环境，不依赖 DOM）
@@ -974,6 +1090,21 @@ function legalCells(g, nb) {
   eq([mv.r, mv.c].join(','), '3,5', '较难 AI：自己两连，抢 c 得分');
 }
 
+// —— 简单 AI：燕小北规避「送分格」（moveGivesOpponentPoint 纯函数） ——
+{
+  const g = emptyGrid();
+  // 燕小北(O)落 E-a(3,3) → 玩家下一手被指定到 A 区（cellToBlock(3,3)=0）
+  // A 区 X 已占 (0,0)(0,1) 两连，玩家下一手落 (0,2) 即三连得分 → 送分格
+  g[0][0] = 'X'; g[0][1] = 'X';
+  eq(ai.__ai.moveGivesOpponentPoint(g, 3, 3, 'O', 'X'), true, '燕小北落 (3,3) 会让玩家在 A 区直接得分 → 判定为送分格');
+}
+{
+  const g = emptyGrid();
+  // A 区没有任何 X 两连 → 落 (3,3) 不会送分
+  g[0][0] = 'X';
+  eq(ai.__ai.moveGivesOpponentPoint(g, 3, 3, 'O', 'X'), false, 'A 区无两连 → 落 (3,3) 不是送分格');
+}
+
 // —— 无处可落返回 null ——
 {
   const g = emptyGrid();
@@ -1026,6 +1157,172 @@ console.log('\n===== 人机对局：gameGetState / aiApplyMove =====');
   eq(ok, true, 'AI 落子成功');
   st = envAI.sandbox.window.gameGetState();
   eq(st.current, 'X', 'AI 落子后轮回到 ✕');
+}
+
+/* ============================================================
+   五、自适应布局（js/layout.js）：按「可用宽高」算棋盘单格尺寸
+   ============================================================ */
+console.log('\n===== 自适应布局：棋盘随窗口宽高缩放，任何尺寸都完整可见 =====');
+const LAYOUT = fs.readFileSync(path.join(root, 'js', 'layout.js'), 'utf8');
+
+// 构造一个只够 layout.js 使用的极简布局环境
+//   cfg = { vw, vh, wrapW, wrapH, padX, padTop, padBottom, gap,
+//           blockHeights:[...], stacked, panelW, panelH, panelGap, dialogueH }
+function runLayout(cfg) {
+  const VARS = { '--gap-cell': '2px', '--gap-block': '8px', '--pad-board': '8px' };
+  const rect = (w, h) => ({ width: w, height: h, top: 0, left: 0 });
+
+  function box(w, h, extra) {
+    const o = {
+      offsetParent: {},
+      clientWidth: w,
+      clientHeight: h,
+      children: [],
+      getBoundingClientRect() { return rect(w, h); }
+    };
+    return Object.assign(o, extra || {});
+  }
+
+  const board = box(0, 0, {
+    style: { _p: {}, setProperty(k, v) { this._p[k] = v; } },
+    closest(sel) { return sel === '.wrap' ? wrap : null; }
+  });
+
+  const panelX = box(cfg.panelW, cfg.panelH);
+  const panelO = box(cfg.panelW, cfg.panelH);
+  const playarea = box(cfg.wrapW - cfg.padX * 2, 0, {
+    children: [panelX, board, panelO],
+    scrollWidth: cfg.scrollWidth || 0,   // 横向可滚动内容宽度（手机端铺开两侧信息）
+    scrollLeft: 0,
+    style: {},
+    _cs: {
+      flexDirection: cfg.stacked ? 'column' : 'row',
+      columnGap: cfg.panelGap + 'px',
+      rowGap: cfg.panelGap + 'px',
+      overflowX: cfg.scrollX ? 'auto' : 'visible'
+    }
+  });
+  board.parentNode = playarea;
+
+  const blocks = cfg.blockHeights.map(h => box(cfg.wrapW, h));
+  const wrap = box(cfg.wrapW, cfg.wrapH, {
+    children: blocks.concat([playarea]),
+    _cs: {
+      paddingLeft: cfg.padX + 'px', paddingRight: cfg.padX + 'px',
+      paddingTop: cfg.padTop + 'px', paddingBottom: cfg.padBottom + 'px',
+      rowGap: cfg.gap + 'px', gap: cfg.gap + 'px'
+    }
+  });
+
+  let dlg = null;
+  if (cfg.dialogueH > 0) {
+    dlg = box(cfg.wrapW, cfg.dialogueH);
+    wrap.children.push(dlg);
+  }
+
+  const documentElement = { getComputedStyle: null };
+  const doc = {
+    readyState: 'complete',
+    documentElement,
+    getElementById(id) {
+      if (id === 'board') return board;
+      if (id === 'dialogue') return dlg;
+      return null;
+    }
+  };
+
+  const win = {
+    innerWidth: cfg.vw,
+    innerHeight: cfg.vh,
+    addEventListener() {},
+    requestAnimationFrame(f) { f(); },               // 同步执行，便于断言
+    getComputedStyle(el) {
+      if (el && el._cs) return el._cs;
+      return { getPropertyValue(k) { return VARS[k] || ''; } };   // :root 的尺寸变量
+    }
+  };
+
+  const sb = { document: doc, window: win, console, setTimeout, clearTimeout };
+  vm.createContext(sb);
+  vm.runInContext(LAYOUT, sb, { filename: 'layout.js' });
+
+  const cellPx = board.style._p['--cell'];
+  return {
+    cell: parseInt(cellPx, 10),
+    side: parseInt(cellPx, 10) * 9 + 44,   // 盘宽 = 9*cell + 6*2 + 2*8 + 2*8
+    getCell() { return parseInt(board.style._p['--cell'], 10); },   // 重算后重新读
+    board, win, sb, playarea
+  };
+}
+
+// —— 桌面：宽高都很富余 → 保持原始 52px，不放大 ——
+{
+  const r = runLayout({
+    vw: 1440, vh: 900, wrapW: 1440, wrapH: 900,
+    padX: 0, padTop: 0, padBottom: 0, gap: 14,
+    blockHeights: [40, 16, 44, 26],
+    stacked: false, panelW: 110, panelH: 100, panelGap: 24, dialogueH: 0
+  });
+  eq(r.cell, 52, '桌面大窗口：单格保持上限 52px');
+  eq(r.side, 512, '桌面大窗口：整盘 512px');
+}
+
+// —— 手机竖屏：两侧信息留在左右（横向滑动查看），棋盘独占整行 ——
+{
+  const r = runLayout({
+    vw: 390, vh: 844, wrapW: 390, wrapH: 844,
+    padX: 8, padTop: 8, padBottom: 46, gap: 6,
+    blockHeights: [26, 16, 40, 22],
+    stacked: false, scrollX: true, scrollWidth: 530,
+    panelW: 58, panelH: 56, panelGap: 10, dialogueH: 150
+  });
+  eq(r.cell, 36, '手机竖屏（规则页）：单格算到 36px');
+  eq(r.side <= 390 - 16, true, '手机竖屏：整盘不超出可用宽度（两侧信息不挤占棋盘）');
+  eq(r.side <= 844, true, '手机竖屏：整盘不超出视口高度');
+  eq(r.playarea.scrollLeft, 78, '手机竖屏：初始横向滚动位置居中到棋盘');
+  eq(r.playarea.style.justifyContent, 'flex-start', '手机竖屏：内容超宽时左对齐以便左右滑动');
+}
+
+// —— 窄屏但放得下：不要留偏心空白，直接居中 ——
+{
+  const r = runLayout({
+    vw: 760, vh: 1024, wrapW: 760, wrapH: 1024,
+    padX: 10, padTop: 10, padBottom: 46, gap: 8,
+    blockHeights: [30, 16, 40, 24],
+    stacked: false, scrollX: true, scrollWidth: 640,
+    panelW: 58, panelH: 56, panelGap: 10, dialogueH: 0
+  });
+  eq(r.playarea.style.justifyContent, 'center', '窄屏但内容放得下：棋盘与两侧信息整体居中');
+  eq(r.playarea.scrollLeft, 0, '放得下时不做横向滚动');
+}
+
+// —— 极小屏：低于下限时钉在 18px（宁可页面滚动，也不把棋盘挤没） ——
+{
+  const r = runLayout({
+    vw: 320, vh: 480, wrapW: 320, wrapH: 480,
+    padX: 6, padTop: 6, padBottom: 10, gap: 4,
+    blockHeights: [16, 16, 34, 20],
+    stacked: true, panelW: 180, panelH: 30, panelGap: 6, dialogueH: 140
+  });
+  eq(r.cell, 18, '极小屏：单格夹到下限 18px');
+  eq(r.side, 206, '极小屏：整盘仍有 206px，可纵向滚动查看');
+}
+
+// —— 视口变化后重算 ——
+{
+  const r = runLayout({
+    vw: 1440, vh: 900, wrapW: 1440, wrapH: 900,
+    padX: 0, padTop: 0, padBottom: 0, gap: 14,
+    blockHeights: [40, 16, 44, 26],
+    stacked: false, panelW: 110, panelH: 100, panelGap: 24, dialogueH: 0
+  });
+  eq(r.cell, 52, '重算前：52px');
+  r.win.innerWidth = 800;
+  r.win.innerHeight = 620;
+  r.win.fitBoard();
+  const after = r.getCell();
+  eq(after < 52, true, '窗口缩小后：单格自动变小（' + after + 'px）');
+  eq(after * 9 + 44 <= 800, true, '窗口缩小后：整盘仍在可用宽度内');
 }
 
 console.log('\n结果: ' + PASS + ' 通过, ' + FAIL + ' 失败');

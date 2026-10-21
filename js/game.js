@@ -468,6 +468,22 @@
     return true;
   };
 
+  // 燕小北接管对局（教程收尾选「完成对局」后调用）：
+  //   解除只读、脱离演练循环，进入正常对局 —— 玩家执 ◯，燕小北执 ✕。
+  //   此时棋盘停在「轮到 ✕」（交小薇本应落子的那一步让给了燕小北），
+  //   由 dialogue.js 的调度器驱动燕小北用 easy 难度决策并落子。
+  window.startXiaobeiPlay = function () {
+    if (!grid || gameOver) return false;
+    readOnly = false;
+    rulesMode = 'off';
+    demoFinished = false;          // 恢复正常的绿框高亮（收尾演示的红格/绿框随之失效）
+    setCrown();
+    setGlow();
+    statusEl.textContent = '轮到 ✕ 落子（只能在 ' + BLOCKS[nextBlock] + ' 区域）';
+    render();
+    return window.gameGetState();
+  };
+
   /* ---------- 按钮绑定（按页面实际存在的按钮） ---------- */
   // 「重新开始」→ 确认弹窗
   if (btnRestart) {

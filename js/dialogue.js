@@ -21,7 +21,10 @@
              结束教程 → 她才真正落下那一手（最后区域的 e 号格）→ 棋局判胜负、亮皇冠、给出比分
                         → 她再补一句收尾台词 → 说完停在结束画面上（点击屏幕不再跳转，
                           要回主页请用上方的「← 主页」按钮）
-             完成对局 → 暂未开放（占位提示，棋盘保持现状）
+             完成对局 → 交小薇让位给妹妹燕小北：先由交小薇说三句，讲完把对话框名字与
+                        左侧选手名都改成「燕小北」，燕小北说「我来啦」后以 easy 难度接管
+                        对局（玩家执 ◯、燕小北执 ✕），把这一盘下完；结束时燕小北按胜负
+                        说台词（输→「呜呜呜呜呜，可恶，我还是输了！」；赢→「嗯哼~就是如此简单~」）
    对外暴露（供测试）：
      window.dialogueAdvance()   推进一次（等价于点击）
      window.dialogueState()     返回当前状态字符串
@@ -250,11 +253,7 @@
     nextEl.classList.remove('show');          // 有选项了，不再提示「点击继续」
     choicesEl.innerHTML = '';                 // 幂等：重复调用只重建一次内容
     addChoice('结束教程', false, endTutorial);
-    addChoice('完成对局', true, function () {
-      // TODO(待定)：这里的行为还未最终确定（跳对局页 / 本页接着下 / 暂未开放）。
-      //   现在与人机对战保持一致，先弹「暂未开放」；棋盘保持现状，玩家还可以改选「结束教程」。
-      window.showToast('🚧', '暂未开放', '与交小薇对弈（人机对战）功能正在开发中，敬请期待');
-    });
+    addChoice('完成对局', true, startXiaobei);
     choicesEl.classList.add('show');
   }
 
@@ -282,6 +281,105 @@
     if (w === 'O') return '咦，这盘棋是您赢了呀！那么教程就到这里啦，我们下次再见~';
     if (w === 'X') return '这盘棋是我赢啦~ 不过您已经学会了全部规则，那么教程就到这里啦！';
     return '这盘棋打了个平手！那么教程就到这里啦，我们下次再见~';
+  }
+
+  /* ---------- 选「完成对局」：交小薇让位给妹妹燕小北 ----------
+     交小薇先说三句，讲完把名字让给燕小北（对话框 + 左侧选手名都改成「燕小北」），
+     燕小北说「我来啦」后接管对局：玩家执 ◯、燕小北执 ✕（easy 难度），把这一盘下完。
+     结束时燕小北按胜负说台词：
+       输 → 「呜呜呜呜呜，可恶，我还是输了！」
+       赢 → 「嗯哼~就是如此简单~」 */
+  const XIAOBEI_LINES = [
+    '想要和我完成对局嘛？',
+    '不错的选择，但是作为入门新手，',
+    '不妨和我的妹妹燕小北先完成这一局吧~'
+  ];
+
+  let xiaobeiActive = false;     // 燕小北是否已接管对局
+  let xiaobeiBusy   = false;     // 燕小北正在思考/落子
+  let xiaobeiTimer  = null;      // 燕小北落子前的「思考」延时
+  let xiaobeiObserver = null;    // 观察棋盘变化，玩家落子后触发燕小北回应
+
+  function startXiaobei() {
+    choicesShown = false;
+    if (choicesEl) { choicesEl.classList.remove('show'); choicesEl.innerHTML = ''; }
+
+    // 交小薇说三句；第三句被玩家点掉后，把名字让给燕小北，燕小北接「我来啦」
+    startDynamicLines(XIAOBEI_LINES.map(function (text, i) {
+      return {
+        text: text,
+        onAdvance: (i === XIAOBEI_LINES.length - 1) ? introduceXiaobei : undefined
+      };
+    }));
+  }
+
+  // 第三句说完（被点击推进）→ 改名 + 燕小北说「我来啦」，说完后接管对局
+  function introduceXiaobei() {
+    nameEl.textContent = '燕小北';
+    const labelX = document.getElementById('labelX');
+    if (labelX) labelX.textContent = '✕ 燕小北';
+    // 延后一个宏任务：推进时 advance() 紧接着还会 startLine(index+1)，
+    //   若在这里同步开新句，会被它立刻覆盖（与其它 onAdvance 追加台词同理）。
+    setTimeout(function () {
+      startDynamicLine({ text: '我来啦', after: startXiaobeiLoop });
+    }, 0);
+  }
+
+  // 解除只读、把棋盘交给「燕小北接管」的对局循环
+  function startXiaobeiLoop() {
+    if (typeof window.startXiaobeiPlay !== 'function') return;
+    window.startXiaobeiPlay();       // 解除只读、恢复正常对局观感（轮到 ✕）
+    xiaobeiActive = true;
+
+    // 观察棋盘：玩家落子（或任何棋盘重建）后尝试让燕小北回应
+    const board = document.getElementById('board');
+    if (board && !xiaobeiObserver) {
+      if (typeof MutationObserver !== 'undefined') {
+        xiaobeiObserver = new MutationObserver(xiaobeiMove);
+        xiaobeiObserver.observe(board, { childList: true, subtree: true });
+      }
+    }
+    // 立即触发燕小北的第一手（此刻轮到 ✕）
+    xiaobeiMove();
+  }
+
+  // 燕小北（easy 难度）尝试落子；落完若游戏结束则报胜负台词
+  function xiaobeiMove() {
+    if (!xiaobeiActive) return;
+    if (!window.gameGetState || !window.aiChooseMove || !window.aiApplyMove) return;
+    const st = window.gameGetState();
+    if (st.gameOver) { onXiaobeiGameOver(st); return; }
+    if (st.current !== 'X') return;     // 不是燕小北（✕）的回合
+    if (xiaobeiBusy) return;
+    xiaobeiBusy = true;
+    if (xiaobeiTimer) { clearTimeout(xiaobeiTimer); xiaobeiTimer = null; }
+    xiaobeiTimer = setTimeout(function () {
+      xiaobeiTimer = null;
+      const s = window.gameGetState();
+      if (s.gameOver) { xiaobeiBusy = false; onXiaobeiGameOver(s); return; }
+      if (s.current !== 'X') { xiaobeiBusy = false; return; }
+      const mv = window.aiChooseMove(s.grid, 'X', s.nextBlock, 'easy');
+      if (mv) window.aiApplyMove(mv.r, mv.c);
+      xiaobeiBusy = false;
+      const s2 = window.gameGetState();
+      if (s2.gameOver) onXiaobeiGameOver(s2);
+    }, 600);
+  }
+
+  // 燕小北的对局结束台词（按胜负）
+  function onXiaobeiGameOver(st) {
+    if (!xiaobeiActive) return;
+    xiaobeiActive = false;                 // 只报一次
+    if (xiaobeiTimer) { clearTimeout(xiaobeiTimer); xiaobeiTimer = null; }
+    startDynamicLine(xiaobeiResultText(st.winner));   // 说完停在结束画面（点击屏幕不再跳转）
+  }
+
+  // 燕小北的胜负台词映射（纯函数，供测试断言）
+  //   燕小北执 ✕：◯ 胜 = 她输；✕ 胜 = 她赢；平局 = 中性
+  function xiaobeiResultText(winner) {
+    if (winner === 'O') return '呜呜呜呜呜，可恶，我还是输了！';
+    if (winner === 'X') return '嗯哼~就是如此简单~';
+    return '唔…居然是平局呀。';
   }
 
   // 生成一个选项按钮
@@ -487,17 +585,22 @@
     }
   }
 
-  // 窗口尺寸变化会改变棋盘几何，箭头需要按新尺寸重算（否则会指偏）
-  window.addEventListener('resize', function () {
+  // 棋盘尺寸变化（窗口缩放 / 手机旋转 / 自适应布局重算）会改变棋盘几何，
+  //   箭头必须按新尺寸重算，否则会指偏。js/layout.js 会在 --cell 真的变化后回调这里。
+  function rebuildArrows() {
     if (!arrowSvg || !arrowSvg.parentNode) return;
     const b = document.getElementById('board');
+    if (!b) return;
     const fresh = buildArrows();
     if (!fresh) return;
     b.removeChild(arrowSvg);
     arrowSvg = fresh;
     b.appendChild(arrowSvg);
     arrowSvg.classList.add('show');
-  });
+  }
+
+  window.addEventListener('resize', rebuildArrows);
+  window.onBoardResize = rebuildArrows;
 
   // 让棋盘上的闪烁元素（大写字母 / 小写字母 / 指向箭头）从同一时刻开始闪烁
   //   三者共用同一个 region-blink 动画（时长 1.6s、延迟 0.55s 完全一致），
@@ -644,6 +747,8 @@
   // 暴露给测试
   window.dialogueAdvance = advance;
   window.dialogueState = function () { return state; };
+  window.xiaobeiMove = xiaobeiMove;      // 供测试手动触发燕小北落子
+  window.xiaobeiResultText = xiaobeiResultText;   // 供测试断言胜负台词
 
   init();
 })();

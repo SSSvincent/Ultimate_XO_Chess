@@ -115,10 +115,28 @@
     return { score: bestScore };
   }
 
+  // 判断：燕小北落子到 (r,c) 后，玩家下一手（被指定到 cellToBlock(r,c) 区域）
+  //   是否能在该区域落一子就直接得分（形成三连）。若会，则这一格是「送分格」。
+  function moveGivesOpponentPoint(grid, r, c, me, op) {
+    const nb = cellToBlock(r, c);              // 玩家下一手被指定到的区域
+    const g = apply(grid, r, c, me);           // 先模拟燕小北落下这一子
+    const br = Math.floor(nb / 3), bc = nb % 3;
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        const rr = br * 3 + i, cc = bc * 3 + j;
+        if (g[rr][cc]) continue;               // 只考虑空位
+        const g2 = apply(g, rr, cc, op);       // 玩家在该空位落子
+        const gain = totalScore(g2, op) - totalScore(g, op);
+        if (gain > 0) return true;             // 玩家落一子即得分 → 送分格
+      }
+    }
+    return false;
+  }
+
   /* ---------- 简单 AI：燕小北 ---------- */
   function easyMove(grid, current, nextBlock) {
     const op = current === 'X' ? 'O' : 'X';
-    const moves = legalMoves(grid, nextBlock);
+    let moves = legalMoves(grid, nextBlock);
     if (moves.length === 0) return null;
 
     // 1) 本手能得分（落子后本方三连数 +1）→ 优先（但只拿第一优先格，简单 AI 不追求最大化）
@@ -132,6 +150,13 @@
     // 有得分机会 → 从中随机挑一个（可能挑到只连一条线的，这就是「简单」）
     if (bestGain > 0) {
       return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+    }
+
+    // 1.5) 75% 概率「不给玩家送分」：检查自己的落子是否会让玩家下一手直接得分，
+    //      若是则避开这类格子（其余 25% 概率不规避，保持「简单」、会犯错）。
+    if (Math.random() < 0.75) {
+      const safe = moves.filter(mv => !moveGivesOpponentPoint(grid, mv.r, mv.c, current, op));
+      if (safe.length > 0) moves = safe;
     }
 
     // 2) 堵对手：找出对手若落到该格能得分的格，堵掉（随机堵一个）
@@ -179,6 +204,7 @@
 
   // 暴露给测试（便于断言内部细节）
   window.__ai = {
-    cellToBlock, linesInBlock, totalScore, legalMoves, evaluate, easyMove, hardMove
+    cellToBlock, linesInBlock, totalScore, legalMoves, evaluate,
+    easyMove, hardMove, moveGivesOpponentPoint
   };
 })();
